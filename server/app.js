@@ -32,10 +32,6 @@ export function createApp({ database, storage, env = process.env, fetchImpl = gl
   }));
 
   app.post('/api/public/applications', asyncHandler(async (request, response) => {
-    if (request.body.company) {
-      response.status(201).json({ accepted: true });
-      return;
-    }
 
     const lead = await store.createLead({
       ...request.body,

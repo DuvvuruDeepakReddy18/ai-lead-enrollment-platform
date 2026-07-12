@@ -147,3 +147,28 @@ test('public application is scored and appears in the lead pipeline', async () =
     assert.equal(pipeline.leads[0].id, application.applicationId);
   });
 });
+test('public application is not discarded when a browser autofills company', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/public/applications`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Deepak Autofill Check',
+        email: 'deepak.autofill@example.com',
+        phone: '9876500099',
+        city: 'Hyderabad',
+        qualification: '12th Completed Student',
+        courseInterest: 'BTech',
+        age: 17,
+        consent: true,
+        company: 'Autofilled value'
+      })
+    });
+    const application = await response.json();
+
+    assert.equal(response.status, 201);
+    assert.equal(application.accepted, true);
+    assert.equal(application.lead.name, 'Deepak Autofill Check');
+    assert.equal(application.lead.source, 'Website Application');
+  });
+});

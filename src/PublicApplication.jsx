@@ -20,8 +20,7 @@ const initialApplication = {
   courseInterest: 'BTech',
   age: 17,
   downloadedBrochure: false,
-  consent: false,
-  company: ''
+  consent: false
 };
 
 export default function PublicApplication({ onOpenWorkspace, onSubmitted }) {
@@ -112,7 +111,6 @@ export default function PublicApplication({ onOpenWorkspace, onSubmitted }) {
                   <input type="checkbox" checked={form.consent} onChange={(event) => setForm({ ...form, consent: event.target.checked })} required />
                   <span><strong>I agree to be contacted about this application</strong><small>Email, phone, SMS, or WhatsApp may be used for admission guidance.</small></span>
                 </label>
-                <label className="application-honeypot" aria-hidden="true">Company<input tabIndex={-1} autoComplete="off" value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} /></label>
               </div>
 
               <button className="application-submit" type="submit" disabled={submitting}>
