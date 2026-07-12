@@ -7,7 +7,7 @@ import { createDatabase, seedDatabase } from '../server/db.js';
 async function withServer(callback) {
   const database = createDatabase(':memory:');
   seedDatabase(database);
-  const app = createApp({ database });
+  const app = createApp({ database, env: {} });
   const server = app.listen(0);
   await new Promise((resolve) => server.once('listening', resolve));
   const { port } = server.address();

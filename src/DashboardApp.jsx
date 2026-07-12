@@ -34,7 +34,7 @@ import { AnalyticsView, FollowupsView } from './OperationsViews.jsx';
 import { EnrollmentView, OverviewView, PriorityView } from './CommandViews.jsx';
 import { IntegrationsView, MessagesHubView } from './CommunicationViews.jsx';
 import PublicApplication from './PublicApplication.jsx';
-import { SystemStatus, channelLabel, initialFilters, initialForm } from './dashboard-ui.jsx';
+import { BrandLockup, SystemStatus, channelLabel, initialFilters, initialForm } from './dashboard-ui.jsx';
 
 const views = {
   overview: { label: 'Overview', kicker: 'Admissions command center', title: 'Admissions overview', icon: LayoutDashboard },
@@ -210,7 +210,10 @@ export default function DashboardApp() {
     filters.source !== 'All',
     filters.sort !== initialFilters.sort
   ].filter(Boolean).length;
-  const aiReady = Boolean((integrations?.openrouter?.configured && integrations?.openrouter?.modelAllowed) || integrations?.openai?.configured);
+  const googleReady = Boolean(integrations?.google?.configured && integrations?.google?.modelAllowed);
+  const openRouterReady = Boolean(integrations?.openrouter?.configured && integrations?.openrouter?.modelAllowed);
+  const aiReady = Boolean(googleReady || openRouterReady || integrations?.openai?.configured);
+  const aiStatus = googleReady ? 'Gemini primary' : openRouterReady ? 'OpenRouter' : integrations?.openai?.configured ? 'OpenAI' : 'Local mode';
   const storageReady = Boolean(integrations?.supabase?.configured);
   const todayLabel = useMemo(() => new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()), []);
   const viewMeta = views[activeView];
@@ -239,7 +242,7 @@ export default function DashboardApp() {
       const result = await getMessages(selectedLead.id);
       setMessages(result.messages);
       setNotice(result.messages.provider === 'local-fallback'
-        ? 'OpenRouter was unavailable, so a personalized fallback draft was created.'
+        ? 'Backup draft created. You can retry the free AI route from the studio.'
         : 'Fresh AI outreach draft generated.');
     } catch (error) {
       setNotice(error.message);
@@ -351,7 +354,7 @@ export default function DashboardApp() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-mark">LF</span><div><strong>LeadFlow</strong><span>EFOS Admissions</span></div></div>
+        <BrandLockup />
         <nav className="nav-stack" aria-label="Main navigation">
           {Object.entries(views).map(([key, item]) => (
             <NavItem key={key} item={item} active={activeView === key} count={key === 'pipeline' ? metrics.totalLeads : null} onClick={() => navigateView(key)} />
@@ -362,7 +365,7 @@ export default function DashboardApp() {
         </button>
         <div className="sidebar-status">
           <p className="sidebar-label">System status</p>
-          <SystemStatus type="bot" label="AI drafting" value={aiReady ? 'Connected' : 'Local mode'} ready={aiReady} />
+          <SystemStatus type="bot" label="AI drafting" value={aiStatus} ready={aiReady} />
           <SystemStatus type="database" label="Lead storage" value={storageReady ? 'Supabase' : 'SQLite'} ready={storageReady} />
         </div>
         <div className="sidebar-footer"><span className="live-dot" />Admissions workspace online</div>

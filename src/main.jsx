@@ -5,6 +5,7 @@ import './styles.css';
 import './workspaces.css';
 import './features.css';
 import './application.css';
+import './colorful.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

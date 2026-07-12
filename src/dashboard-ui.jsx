@@ -1,4 +1,4 @@
-import { Bot, Database, UserRoundSearch } from 'lucide-react';
+import { Bot, Database, GraduationCap, UserRoundSearch } from 'lucide-react';
 
 export const initialForm = {
   name: '',
@@ -31,6 +31,15 @@ export function SystemStatus({ type, label, value, ready }) {
       <span><Icon size={16} /></span>
       <div><strong>{label}</strong><small>{value}</small></div>
       <i className={ready ? 'ready' : 'local'} />
+    </div>
+  );
+}
+
+export function BrandLockup({ subtitle = 'EFOS Admissions' }) {
+  return (
+    <div className="brand">
+      <span className="brand-mark" aria-hidden="true"><GraduationCap size={23} /></span>
+      <div><strong>LeadFlow</strong><span>{subtitle}</span></div>
     </div>
   );
 }
@@ -127,9 +136,14 @@ export function ScorePill({ lead }) {
 }
 
 export function ScoreRing({ score }) {
+  const normalized = Math.max(0, Math.min(100, Number(score) || 0));
+  const tier = normalized >= 80 ? 'Priority' : normalized >= 60 ? 'Promising' : 'Developing';
+  const tone = normalized >= 80 ? 'hot' : normalized >= 60 ? 'warm' : 'cool';
   return (
-    <div className="score-ring" style={{ '--score': score * 3.6 + 'deg' }}>
-      <strong>{score}</strong><span>Score</span>
+    <div className={'score-meter ' + tone} style={{ '--score-width': normalized + '%' }} aria-label={'Lead score ' + normalized + ' out of 100'}>
+      <div className="score-meter-head"><strong>{normalized}</strong><span>/100</span></div>
+      <small>{tier}</small>
+      <div className="score-meter-track"><i /></div>
     </div>
   );
 }
@@ -152,6 +166,7 @@ export function pipelineShare(value, total) {
 }
 
 export function providerLabel(messages) {
+  if (messages?.provider === 'google') return 'Google Gemini';
   if (messages?.provider === 'openrouter') return 'OpenRouter AI';
   if (messages?.provider === 'openai') return 'OpenAI';
   if (messages?.provider === 'local-fallback') return 'Smart fallback';

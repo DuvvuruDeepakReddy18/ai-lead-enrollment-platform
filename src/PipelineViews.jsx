@@ -232,6 +232,7 @@ export function IntelligenceView({
         </div>
 
         <div className="integration-status" aria-label="Integration status">
+          <IntegrationBadge label="Gemini" ready={integrations?.google?.configured && integrations?.google?.modelAllowed} detail={integrations?.google?.model} />
           <IntegrationBadge label="OpenRouter" ready={integrations?.openrouter?.configured && integrations?.openrouter?.modelAllowed} detail={integrations?.openrouter?.model} />
           {integrations?.openai?.configured ? <IntegrationBadge label="OpenAI" ready detail={integrations?.openai?.model} /> : null}
           <IntegrationBadge label="Email" ready={integrations?.smtp?.configured} />
@@ -248,7 +249,9 @@ export function IntelligenceView({
 
           {messages?.provider === 'local-fallback' ? (
             <div className="draft-fallback-note" role="status">
-              OpenRouter was temporarily unavailable. This personalized fallback is ready now; use regenerate to retry AI.
+              <Sparkles size={16} />
+              <span><strong>Backup draft ready</strong><small>The free AI route is busy, so a personalized draft was prepared without interrupting your work.</small></span>
+              <button type="button" onClick={onRegenerate} disabled={isDetailLoading}><RotateCcw size={14} /> Retry AI</button>
             </div>
           ) : null}
 

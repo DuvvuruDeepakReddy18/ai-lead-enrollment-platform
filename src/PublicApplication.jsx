@@ -10,6 +10,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { submitApplication } from './api.js';
+import { BrandLockup } from './dashboard-ui.jsx';
 
 const initialApplication = {
   name: '',
@@ -51,10 +52,7 @@ export default function PublicApplication({ onOpenWorkspace, onSubmitted }) {
   return (
     <main className="application-page">
       <header className="application-header">
-        <div className="application-brand">
-          <span>LF</span>
-          <div><strong>LeadFlow Admissions</strong><small>EFOS student application</small></div>
-        </div>
+        <BrandLockup subtitle="EFOS student application" />
         <button type="button" className="application-workspace-link" onClick={onOpenWorkspace}>
           <LockKeyhole size={15} /> Staff workspace
         </button>

@@ -15,6 +15,7 @@ import {
   Phone,
   Plug,
   Send,
+  Sparkles,
   Webhook
 } from 'lucide-react';
 import { FilterField, StatusBadge, channelLabel, formatFullDate, initials } from './dashboard-ui.jsx';
@@ -94,6 +95,7 @@ export function IntegrationsView({ integrations, onCopy, onOpenApply }) {
   return (
     <section className="view-shell integrations-view" aria-label="Integration workspace">
       <div className="integration-grid">
+        <IntegrationCard icon={<Sparkles />} label="Google Gemini" ready={integrations?.google?.configured && integrations?.google?.modelAllowed} detail={integrations?.google?.model || 'Free-tier structured generation'} />
         <IntegrationCard icon={<Bot />} label="OpenRouter AI" ready={integrations?.openrouter?.configured && integrations?.openrouter?.modelAllowed} detail={integrations?.openrouter?.model || 'Free-model routing'} />
         <IntegrationCard icon={<Database />} label="Supabase" ready={integrations?.supabase?.configured} detail={integrations?.supabase?.configured ? 'Cloud lead storage' : 'SQLite fallback active'} />
         <IntegrationCard icon={<Mail />} label="Email delivery" ready={integrations?.smtp?.configured} detail={integrations?.smtp?.configured ? 'SMTP connected' : 'Manual email handoff'} />

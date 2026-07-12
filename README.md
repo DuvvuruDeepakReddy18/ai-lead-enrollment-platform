@@ -78,7 +78,9 @@ copy .env.example .env
 
 Provider behavior:
 
-- `OPENROUTER_API_KEY` enables real AI-generated WhatsApp/email/SMS copy through OpenRouter Chat Completions.
+- `GOOGLE_AI_API_KEY` enables primary structured outreach through Google Gemini.
+- Google generation is restricted to models with a documented free tier; the default is stable `gemini-3.5-flash`.
+- `OPENROUTER_API_KEY` enables backup generation through OpenRouter Chat Completions.
 - OpenRouter is strictly free-only: `OPENROUTER_MODEL` must be `openrouter/free` or a model id ending in `:free`; paid model IDs are rejected before any API call.
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` enable cloud persistence through Supabase/Postgres.
 - If Supabase is not configured, the app automatically falls back to local SQLite.
@@ -116,8 +118,10 @@ The repository includes a Vercel serverless entry and SPA routing configuration.
 ```text
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+GOOGLE_AI_API_KEY=your-google-ai-studio-key
+GOOGLE_AI_MODEL=gemini-3.5-flash
 OPENROUTER_API_KEY=your-openrouter-key
-OPENROUTER_MODEL=openrouter/free
+OPENROUTER_MODEL=nvidia/nemotron-nano-12b-v2-vl:free
 OPENROUTER_HTTP_REFERER=https://your-vercel-domain.vercel.app
 OPENROUTER_APP_TITLE=EFOS LeadFlow
 ```

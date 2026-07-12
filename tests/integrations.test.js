@@ -33,6 +33,7 @@ test('detects configured real providers without exposing secrets', () => {
   });
 
   assert.deepEqual(status, {
+    google: { configured: false, model: 'gemini-3.5-flash', freeTierOnly: true, modelAllowed: true },
     openrouter: { configured: false, model: 'openrouter/free', freeOnly: true, modelAllowed: true },
     openai: { configured: true, model: 'gpt-5.2' },
     supabase: { configured: false, url: null, mode: 'sqlite-fallback' },
@@ -41,6 +42,95 @@ test('detects configured real providers without exposing secrets', () => {
     whatsapp: { configured: true, provider: 'twilio' },
     webhook: { configured: true }
   });
+});
+
+test('uses Google Gemini as the primary structured outreach provider', async () => {
+  const calls = [];
+  const messages = await generateMessagesWithProvider(lead, {
+    env: {
+      GOOGLE_AI_API_KEY: 'google-test',
+      GOOGLE_AI_MODEL: 'gemini-3.5-flash',
+      OPENROUTER_API_KEY: 'sk-or-test',
+      OPENROUTER_MODEL: 'openrouter/free'
+    },
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        json: async () => ({
+          candidates: [{
+            content: {
+              parts: [{
+                text: JSON.stringify({
+                  whatsapp: 'Hi Ananya, EFOS can help with your BTech admission plan.',
+                  email: {
+                    subject: 'Your BTech admission plan',
+                    body: 'Hi Ananya, here are your next EFOS counseling steps.'
+                  },
+                  sms: 'Hi Ananya, reply YES for EFOS BTech counseling.'
+                })
+              }]
+            },
+            finishReason: 'STOP'
+          }]
+        })
+      };
+    }
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent');
+  assert.equal(calls[0].options.headers['x-goog-api-key'], 'google-test');
+  const requestBody = JSON.parse(calls[0].options.body);
+  assert.equal(requestBody.generationConfig.responseMimeType, 'application/json');
+  assert.equal(requestBody.generationConfig.thinkingConfig.thinkingLevel, 'minimal');
+  assert.deepEqual(requestBody.generationConfig.responseJsonSchema.required, ['whatsapp', 'email', 'sms']);
+  assert.equal(messages.provider, 'google');
+  assert.equal(messages.model, 'gemini-3.5-flash');
+});
+
+test('falls back from Gemini to a strictly free OpenRouter model', async () => {
+  const calls = [];
+  const messages = await generateMessagesWithProvider(lead, {
+    env: {
+      GOOGLE_AI_API_KEY: 'google-test',
+      OPENROUTER_API_KEY: 'sk-or-test',
+      OPENROUTER_MODEL: 'nvidia/nemotron-nano-12b-v2-vl:free'
+    },
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      if (calls.length === 1) {
+        return {
+          ok: false,
+          json: async () => ({ error: { message: 'Gemini capacity unavailable.' } })
+        };
+      }
+      const body = JSON.parse(options.body);
+      return {
+        ok: true,
+        json: async () => ({
+          model: body.model,
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                whatsapp: 'Hi Ananya, EFOS can help with your BTech admission plan.',
+                email: {
+                  subject: 'Your BTech admission plan',
+                  body: 'Hi Ananya, here are your next EFOS counseling steps.'
+                },
+                sms: 'Hi Ananya, reply YES for EFOS BTech counseling.'
+              })
+            }
+          }]
+        })
+      };
+    }
+  });
+
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].url, /generativelanguage\.googleapis\.com/);
+  assert.equal(JSON.parse(calls[1].options.body).model, 'nvidia/nemotron-nano-12b-v2-vl:free');
+  assert.equal(messages.provider, 'openrouter');
 });
 
 test('uses OpenAI Responses API when an API key is configured', async () => {
@@ -184,9 +274,55 @@ test('uses OpenRouter free chat completion when an OpenRouter key is configured'
   const requestBody = JSON.parse(calls[0].options.body);
   assert.equal(requestBody.model, 'openrouter/free');
   assert.deepEqual(requestBody.response_format, { type: 'json_object' });
+  assert.equal(requestBody.max_tokens, 900);
   assert.equal(messages.provider, 'openrouter');
   assert.equal(messages.model, 'openrouter/free');
   assert.match(messages.whatsapp, /Ananya/);
+});
+
+test('fails over between free OpenRouter models when the first endpoint is unavailable', async () => {
+  const calls = [];
+  const messages = await generateMessagesWithProvider(lead, {
+    env: {
+      OPENROUTER_API_KEY: 'sk-or-test',
+      OPENROUTER_MODEL: 'nvidia/nemotron-nano-12b-v2-vl:free'
+    },
+    fetchImpl: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      calls.push(body.model);
+      if (calls.length === 1) {
+        return {
+          ok: false,
+          json: async () => ({ error: { message: 'Provider capacity unavailable.' } })
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          model: body.model,
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                whatsapp: 'Hi Ananya, EFOS can help with your BTech admission plan.',
+                email: {
+                  subject: 'Your BTech admission plan',
+                  body: 'Hi Ananya, here are your next EFOS counseling steps.'
+                },
+                sms: 'Hi Ananya, reply YES for EFOS BTech counseling.'
+              })
+            }
+          }]
+        })
+      };
+    }
+  });
+
+  assert.deepEqual(calls, [
+    'nvidia/nemotron-nano-12b-v2-vl:free',
+    'google/gemma-4-26b-a4b-it:free'
+  ]);
+  assert.equal(messages.provider, 'openrouter');
+  assert.equal(messages.model, 'google/gemma-4-26b-a4b-it:free');
 });
 
 test('rejects paid OpenRouter model identifiers before making a request', async () => {

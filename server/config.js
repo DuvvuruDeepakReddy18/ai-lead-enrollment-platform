@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
 export const DEFAULT_OPENROUTER_MODEL = 'openrouter/free';
+const GOOGLE_FREE_TIER_MODELS = new Set(['gemini-3.5-flash', 'gemini-2.5-flash-lite']);
 
 export function loadDotEnv(filePath = path.resolve(process.cwd(), '.env')) {
   if (!fs.existsSync(filePath)) return;
@@ -22,6 +24,7 @@ export function loadDotEnv(filePath = path.resolve(process.cwd(), '.env')) {
 }
 
 export function getIntegrationStatus(env = process.env) {
+  const googleModel = env.GOOGLE_AI_MODEL || env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
   const openaiModel = env.OPENAI_MODEL || 'gpt-5.2';
   const openrouterModel = env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
   const smtpConfigured = Boolean(env.SMTP_HOST && env.SMTP_PORT && env.SMTP_FROM && env.SMTP_USER && env.SMTP_PASS);
@@ -29,6 +32,12 @@ export function getIntegrationStatus(env = process.env) {
   const supabaseKey = getSupabaseServerKey(env);
 
   return {
+    google: {
+      configured: Boolean(env.GOOGLE_AI_API_KEY || env.GEMINI_API_KEY),
+      model: googleModel,
+      freeTierOnly: true,
+      modelAllowed: GOOGLE_FREE_TIER_MODELS.has(googleModel)
+    },
     openrouter: {
       configured: Boolean(env.OPENROUTER_API_KEY),
       model: openrouterModel,
