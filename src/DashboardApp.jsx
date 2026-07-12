@@ -7,6 +7,12 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  ExternalLink,
+  Flame,
+  GraduationCap,
+  LayoutDashboard,
+  Mail,
+  Plug,
   Plus,
   X
 } from 'lucide-react';
@@ -25,26 +31,41 @@ import {
 import LeadModal from './LeadModal.jsx';
 import { PipelineView, IntelligenceView } from './PipelineViews.jsx';
 import { AnalyticsView, FollowupsView } from './OperationsViews.jsx';
+import { EnrollmentView, OverviewView, PriorityView } from './CommandViews.jsx';
+import { IntegrationsView, MessagesHubView } from './CommunicationViews.jsx';
+import PublicApplication from './PublicApplication.jsx';
 import { SystemStatus, channelLabel, initialFilters, initialForm } from './dashboard-ui.jsx';
 
 const views = {
+  overview: { label: 'Overview', kicker: 'Admissions command center', title: 'Admissions overview', icon: LayoutDashboard },
   pipeline: { label: 'Pipeline', kicker: 'Admissions operations', title: 'Lead pipeline', icon: ClipboardList },
-  intelligence: { label: 'AI Intelligence', kicker: 'AI enrollment desk', title: 'Lead intelligence', icon: Bot },
+  priority: { label: 'Priority Desk', kicker: 'High-intent candidates', title: 'Priority leads', icon: Flame },
+  intelligence: { label: 'AI Studio', kicker: 'AI enrollment desk', title: 'Lead intelligence', icon: Bot },
+  messages: { label: 'Messages', kicker: 'Communication operations', title: 'Messages hub', icon: Mail },
   followups: { label: 'Follow-Ups', kicker: 'Cadence operations', title: 'Follow-up queue', icon: BellRing },
-  analytics: { label: 'Analytics', kicker: 'Performance overview', title: 'Enrollment analytics', icon: BarChart3 }
+  enrollment: { label: 'Enrollment', kicker: 'Student lifecycle', title: 'Enrollment journey', icon: GraduationCap },
+  analytics: { label: 'Analytics', kicker: 'Performance overview', title: 'Enrollment analytics', icon: BarChart3 },
+  integrations: { label: 'Integrations', kicker: 'Connected systems', title: 'Integration center', icon: Plug }
 };
 
 const hashAliases = {
+  overview: 'overview',
+  dashboard: 'overview',
   pipeline: 'pipeline',
   'lead-inbox': 'pipeline',
+  priority: 'priority',
   intelligence: 'intelligence',
   scoring: 'intelligence',
+  messages: 'messages',
   followups: 'followups',
-  analytics: 'analytics'
+  enrollment: 'enrollment',
+  analytics: 'analytics',
+  integrations: 'integrations',
+  apply: 'apply'
 };
 
 function readViewFromHash() {
-  return hashAliases[window.location.hash.slice(1).toLowerCase()] || 'pipeline';
+  return hashAliases[window.location.hash.slice(1).toLowerCase()] || 'overview';
 }
 
 export default function DashboardApp() {
@@ -60,6 +81,7 @@ export default function DashboardApp() {
   const [followups, setFollowups] = useState([]);
   const [integrations, setIntegrations] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
+  const [allDeliveries, setAllDeliveries] = useState([]);
   const [draftChannel, setDraftChannel] = useState('whatsapp');
   const [sendingChannel, setSendingChannel] = useState('');
   const [statusDraft, setStatusDraft] = useState('New');
@@ -103,8 +125,13 @@ export default function DashboardApp() {
     }
   }
 
+  async function loadAllDeliveries() {
+    const data = await getDeliveries();
+    setAllDeliveries(data.deliveries);
+  }
+
   useEffect(() => {
-    Promise.all([refresh(initialFilters), loadAllLeads(), loadAllFollowups()])
+    Promise.all([refresh(initialFilters), loadAllLeads(), loadAllFollowups(), loadAllDeliveries()])
       .catch((error) => setNotice(error.message));
     getIntegrations().then((data) => setIntegrations(data.integrations)).catch((error) => setNotice(error.message));
   }, []);
@@ -175,7 +202,8 @@ export default function DashboardApp() {
     });
   }, [allFollowups, followupDay, followupSearch]);
 
-  const metrics = analytics?.metrics || { totalLeads: 0 };
+  const effectiveAnalytics = useMemo(() => buildClientAnalytics(allLeads), [allLeads]);
+  const metrics = effectiveAnalytics.metrics;
   const activeFilterCount = [
     filters.search.trim(),
     filters.status !== 'All',
@@ -248,6 +276,7 @@ export default function DashboardApp() {
       setMessages(result.messages || messages);
       const deliveryData = await getDeliveries(selectedLead.id);
       setDeliveries(deliveryData.deliveries);
+      await loadAllDeliveries();
       setNotice(channelLabel(channel) + ' ' + result.delivery.status.replace(/_/g, ' ') + ' via ' + result.delivery.provider + '.');
     } catch (error) {
       setNotice(error.message);
@@ -278,7 +307,7 @@ export default function DashboardApp() {
       setForm(initialForm);
       setIsFormOpen(false);
       setFilters(initialFilters);
-      await Promise.all([refresh(initialFilters), loadAllLeads(), loadAllFollowups()]);
+      await Promise.all([refresh(initialFilters), loadAllLeads(), loadAllFollowups(), loadAllDeliveries()]);
       setSelectedId(created.lead.id);
     } catch (error) {
       setNotice(error.message);
@@ -287,9 +316,36 @@ export default function DashboardApp() {
     }
   }
 
-  function openLeadInIntelligence(leadId) {
+  function openLead(leadId, view = 'pipeline') {
     setSelectedId(leadId);
-    navigateView('intelligence');
+    navigateView(view);
+  }
+
+  function openLeadInIntelligence(leadId) {
+    openLead(leadId, 'intelligence');
+  }
+
+  async function copyValue(value, label) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setNotice(label + ' copied.');
+    } catch {
+      setNotice('Clipboard access was blocked by the browser.');
+    }
+  }
+
+  function syncPublicApplication() {
+    Promise.all([refresh(filters), loadAllLeads(), loadAllFollowups()])
+      .catch((error) => setNotice(error.message));
+  }
+
+  function openWorkspace() {
+    syncPublicApplication();
+    navigateView('overview');
+  }
+
+  if (activeView === 'apply') {
+    return <PublicApplication onOpenWorkspace={openWorkspace} onSubmitted={syncPublicApplication} />;
   }
 
   return (
@@ -301,6 +357,9 @@ export default function DashboardApp() {
             <NavItem key={key} item={item} active={activeView === key} count={key === 'pipeline' ? metrics.totalLeads : null} onClick={() => navigateView(key)} />
           ))}
         </nav>
+        <button className="intake-nav-button" type="button" onClick={() => navigateView('apply')}>
+          <ExternalLink size={16} /><span>Public application form</span>
+        </button>
         <div className="sidebar-status">
           <p className="sidebar-label">System status</p>
           <SystemStatus type="bot" label="AI drafting" value={aiReady ? 'Connected' : 'Local mode'} ready={aiReady} />
@@ -320,16 +379,21 @@ export default function DashboardApp() {
 
         {notice ? <div className="notice" role="status"><CheckCircle2 size={18} /><span>{notice}</span><button type="button" aria-label="Dismiss notification" title="Dismiss" onClick={() => setNotice('')}><X size={16} /></button></div> : null}
 
+        {activeView === 'overview' ? <OverviewView leads={allLeads} analytics={effectiveAnalytics} followups={allFollowups} deliveries={allDeliveries} onOpenLead={openLead} onNavigate={navigateView} onOpenApply={() => navigateView('apply')} /> : null}
         {activeView === 'pipeline' ? (
           <PipelineView leads={leads} selectedLead={selectedLead} filters={filters} activeFilterCount={activeFilterCount} isLoading={isLoading} statusDraft={statusDraft} setStatusDraft={setStatusDraft} onFilter={updateFilters} onClearFilters={clearFilters} onSelect={setSelectedId} onStatusUpdate={submitStatusUpdate} onNavigate={navigateView} />
         ) : null}
+        {activeView === 'priority' ? <PriorityView leads={allLeads} onOpenLead={openLead} /> : null}
         {activeView === 'intelligence' ? (
           <IntelligenceView leads={allLeads} selectedLead={selectedLead} selectedId={selectedId} onSelect={setSelectedId} messages={messages} followups={followups} integrations={integrations} deliveries={deliveries} isDetailLoading={isDetailLoading} draftChannel={draftChannel} setDraftChannel={setDraftChannel} sendingChannel={sendingChannel} onSend={sendChannel} onRegenerate={regenerateDraft} onCopy={copyDraft} onOpenChannel={openDraftChannel} />
         ) : null}
+        {activeView === 'messages' ? <MessagesHubView leads={allLeads} deliveries={allDeliveries} onOpenLead={openLead} /> : null}
         {activeView === 'followups' ? (
           <FollowupsView followups={filteredFollowups} isLoading={isFollowupLoading} search={followupSearch} setSearch={setFollowupSearch} day={followupDay} setDay={setFollowupDay} onOpenLead={openLeadInIntelligence} />
         ) : null}
-        {activeView === 'analytics' ? <AnalyticsView analytics={analytics} leads={allLeads} /> : null}
+        {activeView === 'enrollment' ? <EnrollmentView leads={allLeads} analytics={effectiveAnalytics} onOpenLead={openLead} /> : null}
+        {activeView === 'analytics' ? <AnalyticsView analytics={effectiveAnalytics} leads={allLeads} /> : null}
+        {activeView === 'integrations' ? <IntegrationsView integrations={integrations} onCopy={copyValue} onOpenApply={() => navigateView('apply')} /> : null}
       </main>
 
       {isFormOpen ? <LeadModal form={form} setForm={setForm} isSubmitting={isSubmitting} onClose={() => setIsFormOpen(false)} onSubmit={submitLead} /> : null}
@@ -368,4 +432,37 @@ function manualChannelUrl(lead, messages, channel) {
     return `sms:${String(lead.phone || '').replace(/[^+\d]/g, '')}?body=${encodeURIComponent(text)}`;
   }
   return '';
+}
+function buildClientAnalytics(leads) {
+  const totalLeads = leads.length;
+  const hotLeads = leads.filter((lead) => lead.temperature === 'Hot').length;
+  const qualifiedLeads = leads.filter((lead) => lead.score > 80 || ['Qualified', 'Enrolled'].includes(lead.status)).length;
+  const enrollments = leads.filter((lead) => lead.status === 'Enrolled').length;
+  const bySource = new Map();
+
+  for (const lead of leads) {
+    const source = lead.source || 'Unknown';
+    const current = bySource.get(source) || { source, leads: 0, hot: 0, enrolled: 0 };
+    current.leads += 1;
+    if (lead.temperature === 'Hot') current.hot += 1;
+    if (lead.status === 'Enrolled') current.enrolled += 1;
+    bySource.set(source, current);
+  }
+
+  const percentage = (part, total) => total ? Number(((part / total) * 100).toFixed(1)) : 0;
+  return {
+    metrics: {
+      totalLeads,
+      hotLeads,
+      qualifiedLeads,
+      enrollments,
+      conversionRate: percentage(enrollments, totalLeads),
+      enrollmentRate: percentage(enrollments, qualifiedLeads)
+    },
+    sourcePerformance: [...bySource.values()].map((source) => ({
+      ...source,
+      hotRate: percentage(source.hot, source.leads),
+      enrollmentRate: percentage(source.enrolled, source.leads)
+    })).sort((a, b) => b.leads - a.leads)
+  };
 }

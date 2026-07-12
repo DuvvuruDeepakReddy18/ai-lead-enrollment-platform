@@ -118,3 +118,32 @@ test('API enforces valid lead statuses and updates enrollment analytics', async 
     assert.ok(analytics.metrics.enrollmentRate > 0);
   });
 });
+test('public application is scored and appears in the lead pipeline', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/public/applications`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Public Applicant',
+        email: 'public.applicant@example.com',
+        phone: '9876509999',
+        city: 'Pune',
+        qualification: '12th Completed Student',
+        courseInterest: 'BTech',
+        age: 17,
+        downloadedBrochure: true,
+        consent: true
+      })
+    });
+    const application = await response.json();
+
+    assert.equal(response.status, 201);
+    assert.equal(application.accepted, true);
+    assert.equal(application.lead.source, 'Website Application');
+    assert.equal(application.lead.temperature, 'Hot');
+
+    const pipeline = await fetch(`${baseUrl}/api/leads?search=public.applicant`).then((result) => result.json());
+    assert.equal(pipeline.leads.length, 1);
+    assert.equal(pipeline.leads[0].id, application.applicationId);
+  });
+});

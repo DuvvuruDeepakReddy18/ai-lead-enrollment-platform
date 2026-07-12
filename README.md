@@ -4,17 +4,27 @@ AI-powered student lead qualification and enrollment automation MVP.
 
 Live app: https://ai-lead-enrollment-platform.vercel.app
 
+Student application form: https://ai-lead-enrollment-platform.vercel.app/#apply
+
+Staff workspace: https://ai-lead-enrollment-platform.vercel.app/#overview
+
 ## What It Builds
 
 This project implements the PDF brief as a runnable full-stack application:
 
 - Lead collection form
+- Public student application form connected to the staff pipeline
+- Admissions overview with KPIs, recent applications, and enrollment funnel
 - Lead management dashboard
+- Priority lead command queue
 - AI-style lead scoring engine
 - Personalized WhatsApp, email, and SMS generation
+- Cross-lead messages and delivery history workspace
 - Day 1, 3, 5, 7, and 10 follow-up automation model
 - Counselor assignment for scores greater than 80
+- Enrollment lifecycle board
 - Enrollment and source analytics dashboard
+- Integration health and webhook setup workspace
 - Real-ready OpenRouter, Supabase, SMTP, Twilio, and webhook integrations
 
 ## Run Locally
@@ -51,13 +61,12 @@ npm run build
 
 ## Demo Flow
 
-1. Open the dashboard.
-2. Click `New Lead`.
-3. Add a BTech student aged 16-18 with 12th completed, brochure downloaded, and more than 3 website visits.
-4. Confirm the lead receives a Hot score and counselor assignment.
-5. Select the lead in the inbox.
-6. Open AI Intelligence to review scoring, regenerate or copy outreach, and send through a connected provider or prefilled manual handoff.
-7. Review the dedicated Follow-Ups and Analytics workspaces.
+1. Open `/#apply` and submit a student application.
+2. Open `/#overview` and confirm the application appears under Recent applications.
+3. Open Pipeline and search for the student's name or email.
+4. Confirm an eligible lead receives a Hot score and counselor assignment.
+5. Open Priority Leads or AI Studio to review scoring and outreach.
+6. Review Messages, Follow-Ups, Enrollment, Analytics, and Integrations.
 
 ## Real Integrations
 

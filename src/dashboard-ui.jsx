@@ -16,7 +16,7 @@ export const initialForm = {
 export const initialFilters = { search: '', status: 'All', source: 'All', sort: 'score_desc' };
 export const statuses = ['All', 'New', 'Contacted', 'Interested', 'Follow-Up', 'Qualified', 'Enrolled', 'Rejected'];
 export const leadStatuses = statuses.filter((status) => status !== 'All');
-export const sources = ['All', 'Website Form', 'WhatsApp', 'Google Forms', 'Meta Ads', 'Internship Registration', 'Referral Program'];
+export const sources = ['All', 'Website Form', 'WhatsApp', 'Google Forms', 'Meta Ads', 'Internship Registration', 'Referral Program', 'Website Application'];
 export const sortOptions = [
   { value: 'score_desc', label: 'Score: high to low' },
   { value: 'created_desc', label: 'Newest first' },

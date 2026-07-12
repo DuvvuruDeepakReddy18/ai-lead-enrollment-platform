@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { createFollowUpPlan } from './followups.js';
 import { buildAnalytics } from './analytics.js';
 import { generateMessagesWithProvider } from './ai-provider.js';
@@ -29,6 +29,27 @@ export function createApp({ database, storage, env = process.env, fetchImpl = gl
   app.post('/api/leads', asyncHandler(async (request, response) => {
     const lead = await store.createLead(request.body);
     response.status(201).json({ lead });
+  }));
+
+  app.post('/api/public/applications', asyncHandler(async (request, response) => {
+    if (request.body.company) {
+      response.status(201).json({ accepted: true });
+      return;
+    }
+
+    const lead = await store.createLead({
+      ...request.body,
+      source: 'Website Application',
+      websiteVisits: Math.max(1, Number(request.body.websiteVisits || 1)),
+      downloadedBrochure: Boolean(request.body.downloadedBrochure)
+    });
+
+    response.status(201).json({
+      accepted: true,
+      applicationId: lead.id,
+      message: 'Application received and added to the admissions pipeline.',
+      lead
+    });
   }));
 
   app.post('/api/webhooks/leads/:source', asyncHandler(async (request, response) => {
