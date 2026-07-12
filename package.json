@@ -1,0 +1,26 @@
+{
+  "name": "ai-lead-enrollment-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "server": "node server/index.js",
+    "client": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "node server/index.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "express": "^5.2.1",
+    "lucide-react": "^0.562.0",
+    "nodemailer": "^9.0.3",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "vite": "^7.3.0"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}
